@@ -48,6 +48,9 @@ test("keeps the Mac app local and connects GitHub Pages to the hosted voice API"
   assert.match(launcher, /luma-voice-api\.luma-voice-svlad92\.workers\.dev/);
   assert.match(launcher, /navigator\.mediaDevices\?\.getUserMedia/);
   assert.match(launcher, /new MediaRecorder/);
+  assert.match(launcher, /Live call · listening/);
+  assert.match(launcher, /if \(continueCall && callActive\) startUtterance\(\)/);
+  assert.match(launcher, /Press End call when finished/);
   assert.match(launcher, /No model download/);
   assert.doesNotMatch(launcher, /WebLLM|SmolLM|CreateMLCEngine|http:\/\/localhost:3000/);
 });

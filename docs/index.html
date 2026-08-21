@@ -14,7 +14,7 @@
     <header class="topbar"><div class="brand"><span class="brand-mark"><i></i><i></i><i></i></span>Luma</div><div class="privacy" id="privacy"><span class="dot"></span><span>Hosted AI</span></div></header>
     <section class="conversation">
       <div class="eyebrow">Your live voice assistant</div><h1>Just talk. I’m here.</h1>
-      <p class="intro">Talk naturally and hear the answer back. There is no model to install or download—the voice AI runs securely in the cloud.</p>
+      <p class="intro">Start a live call, talk naturally, and hear the answer back. Luma keeps listening between turns until you end the call—no model download required.</p>
       <button class="orb connecting" id="orb" type="button" aria-label="Connecting" disabled><span class="ring"></span><span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
       <div class="phase" id="phase">Connecting to voice AI</div><button class="action" id="action" type="button" disabled>Please wait</button>
       <p class="helper" id="helper">This takes only a moment. Nothing is being downloaded.</p>
@@ -27,22 +27,26 @@
     const API = "https://luma-voice-api.luma-voice-svlad92.workers.dev";
     const $ = id => document.getElementById(id);
     const orb = $("orb"), action = $("action"), phase = $("phase"), helper = $("helper"), privacy = $("privacy");
+    const privacyLabel = privacy.querySelector("span:last-child");
     const typeForm = $("typeForm"), typeInput = $("typeInput"), send = $("send"), conversation = $("conversation"), latency = $("latency");
     const history = [];
-    let state = "connecting", recorder = null, stream = null, chunks = [], recordingTimer = null, playback = null, playbackUrl = null;
+    let state = "connecting", recorder = null, stream = null, playback = null, playbackUrl = null;
+    let callActive = false, audioContext = null, analyser = null, vadFrame = null, discardRecording = false;
 
     const labels = {
-      connecting: ["Connecting to voice AI", "Please wait"], ready: ["Ready when you are", "Start conversation"],
+      connecting: ["Connecting to voice AI", "Please wait"], ready: ["Ready when you are", "Start live call"],
       listening: ["I’m listening", "Finish speaking"], thinking: ["Understanding and thinking", "Preparing answer"],
       speaking: ["Responding", "Tap to stop"], error: ["Connection needs attention", "Try again"]
     };
 
     function setState(next, message) {
       state = next;
-      const [title, button] = labels[next];
-      phase.textContent = title; action.textContent = button;
+      const [title, defaultButton] = labels[next];
+      const button = callActive && ["listening", "thinking", "speaking"].includes(next) ? "End call" : defaultButton;
+      phase.textContent = callActive && next === "listening" ? "Live call · listening" : title; action.textContent = button;
       orb.className = `orb ${next}`; orb.setAttribute("aria-label", button); privacy.className = `privacy ${next}`;
-      const busy = next === "connecting" || next === "thinking";
+      privacyLabel.textContent = callActive ? "Live call" : "Hosted AI";
+      const busy = next === "connecting" || (next === "thinking" && !callActive);
       orb.disabled = busy; action.disabled = busy;
       typeInput.disabled = next !== "ready"; send.disabled = next !== "ready";
       if (message) helper.textContent = message;
@@ -56,7 +60,7 @@
     }
 
     async function connect() {
-      stopMedia(); setState("connecting", "Checking the hosted service. Nothing is being downloaded.");
+      endCall(); setState("connecting", "Checking the hosted service. Nothing is being downloaded.");
       try {
         const response = await fetch(`${API}/health`, { cache: "no-store" });
         if (!response.ok) throw new Error("Voice service unavailable");
@@ -66,34 +70,89 @@
       }
     }
 
-    function stopMedia() {
-      clearTimeout(recordingTimer);
+    function releaseMicrophone() {
+      if (vadFrame) cancelAnimationFrame(vadFrame);
+      vadFrame = null;
+      if (recorder?.state === "recording") { recorder.onstop = null; recorder.stop(); }
+      recorder = null;
       if (stream) stream.getTracks().forEach(track => track.stop());
-      stream = null; recorder = null;
+      stream = null;
+      audioContext?.close(); audioContext = null; analyser = null;
     }
 
-    async function startListening() {
+    function stopPlayback() {
+      if (playback) { playback.onended = null; playback.onerror = null; playback.pause(); }
+      if (playbackUrl) URL.revokeObjectURL(playbackUrl);
+      playback = null; playbackUrl = null;
+    }
+
+    function endCall(message) {
+      const wasActive = callActive;
+      callActive = false; discardRecording = true;
+      releaseMicrophone(); stopPlayback();
+      if (wasActive && message) setState("ready", message);
+    }
+
+    async function startCall() {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
         setState("ready", "Voice recording is unavailable in this browser; type your message below."); typeInput.focus(); return;
       }
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-        const preferred = ["audio/webm;codecs=opus", "audio/mp4"].find(type => MediaRecorder.isTypeSupported(type));
-        recorder = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
-        chunks = [];
-        recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-        recorder.onstop = () => {
-          const audio = new Blob(chunks, { type: recorder?.mimeType || "audio/webm" });
-          stopMedia();
-          if (audio.size) submitTurn({ audio }); else setState("ready", "I didn’t hear anything. Try again or type below.");
-        };
-        recorder.start(250);
-        recordingTimer = window.setTimeout(() => { if (recorder?.state === "recording") recorder.stop(); }, 30000);
-        setState("listening", "Speak naturally, then tap once when finished. Recording stops automatically after 30 seconds.");
+        audioContext = new AudioContext();
+        analyser = audioContext.createAnalyser(); analyser.fftSize = 1024;
+        audioContext.createMediaStreamSource(stream).connect(analyser);
+        callActive = true;
+        startUtterance();
       } catch (error) {
-        stopMedia();
+        endCall();
         setState("error", error?.name === "NotAllowedError" ? "Allow microphone access in the browser, then try again." : "The microphone could not be opened. You can still type below.");
       }
+    }
+
+    function startUtterance() {
+      if (!callActive || !stream || !analyser) return;
+      const preferred = ["audio/webm;codecs=opus", "audio/mp4"].find(type => MediaRecorder.isTypeSupported(type));
+      const current = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
+      const currentChunks = [];
+      recorder = current; discardRecording = false;
+      let speechStarted = false, loudFrames = 0, silenceStarted = 0;
+      const startedAt = performance.now(), samples = new Uint8Array(analyser.fftSize);
+
+      current.ondataavailable = event => { if (event.data.size) currentChunks.push(event.data); };
+      current.onstop = () => {
+        if (vadFrame) cancelAnimationFrame(vadFrame);
+        vadFrame = null; recorder = null;
+        const shouldSubmit = callActive && !discardRecording && speechStarted;
+        const audio = new Blob(currentChunks, { type: current.mimeType || "audio/webm" });
+        if (shouldSubmit && audio.size) submitTurn({ audio, continueCall: true });
+        else if (callActive) startUtterance();
+      };
+
+      function monitor(now) {
+        if (!callActive || current.state !== "recording") return;
+        analyser.getByteTimeDomainData(samples);
+        let energy = 0;
+        for (const sample of samples) { const value = (sample - 128) / 128; energy += value * value; }
+        const speaking = Math.sqrt(energy / samples.length) > 0.025;
+        if (speaking) {
+          loudFrames += 1; silenceStarted = 0;
+          if (loudFrames >= 3) speechStarted = true;
+        } else {
+          loudFrames = 0;
+          if (speechStarted) {
+            if (!silenceStarted) silenceStarted = now;
+            if (now - silenceStarted > 900 && now - startedAt > 700) return current.stop();
+          } else if (now - startedAt > 30000) {
+            discardRecording = true; return current.stop();
+          }
+        }
+        vadFrame = requestAnimationFrame(monitor);
+      }
+
+      current.start(250);
+      vadFrame = requestAnimationFrame(monitor);
+      setState("listening", "The call stays open. Speak naturally; I’ll answer when you pause. Press End call when finished.");
     }
 
     function audioFromBase64(value, type) {
@@ -102,7 +161,7 @@
       return new Blob([bytes], { type: type || "audio/mpeg" });
     }
 
-    async function submitTurn({ text = "", audio = null }) {
+    async function submitTurn({ text = "", audio = null, continueCall = false }) {
       const clean = text.trim();
       if (!clean && !audio) return;
       setState("thinking", audio ? "Transcribing your speech and preparing the answer…" : "Preparing the answer…");
@@ -121,21 +180,28 @@
         renderTurn(result.transcript, result.reply);
         const blob = audioFromBase64(result.audio, result.audioType);
         playbackUrl = URL.createObjectURL(blob); playback = new Audio(playbackUrl);
-        playback.onended = () => { URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null; setState("ready", "Ready for your next turn."); };
-        playback.onerror = () => { URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null; setState("ready", "The answer is shown below; voice playback was unavailable."); };
+        playback.onended = () => {
+          URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null;
+          if (continueCall && callActive) startUtterance(); else setState("ready", "Ready for your next turn.");
+        };
+        playback.onerror = () => {
+          URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null;
+          if (continueCall && callActive) startUtterance(); else setState("ready", "The answer is shown below; voice playback was unavailable.");
+        };
         setState("speaking", "Playing Luma’s answer.");
         await playback.play();
       } catch (error) {
+        if (callActive) endCall();
         setState("error", error instanceof Error ? error.message : "The voice service could not answer.");
       }
     }
 
     async function act() {
       if (state === "error") return connect();
-      if (state === "ready") return startListening();
-      if (state === "listening" && recorder?.state === "recording") return recorder.stop();
+      if (callActive) return endCall("Call ended. Tap Start live call whenever you’re ready.");
+      if (state === "ready") return startCall();
       if (state === "speaking") {
-        playback?.pause(); if (playbackUrl) URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null;
+        stopPlayback();
         return setState("ready", "Response stopped. Ready for your next turn.");
       }
     }

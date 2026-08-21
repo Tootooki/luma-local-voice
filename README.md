@@ -2,7 +2,7 @@
 
 Luma has two editions. The Apple Silicon app uses Granite, Whisper, and Kokoro locally on the Mac. The hosted edition uses GitHub Pages for the interface and a Cloudflare `workers.dev` API for speech recognition, language generation, and voice playback.
 
-Hosted edition: https://tootooki.github.io/luma-local-voice/ — open it on another computer and speak or type. Visitors do not install or download an AI model.
+Hosted edition: https://tootooki.github.io/luma-local-voice/ — open it on another computer and start a continuous live call. Luma automatically detects each pause, answers aloud, and resumes listening until the visitor ends the call. Visitors do not install or download an AI model.
 
 ## Stack
 
