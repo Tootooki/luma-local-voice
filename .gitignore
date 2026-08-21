@@ -7,4 +7,5 @@ backend/.venv/
 __pycache__/
 *.log
 .DS_Store
+.env
 recordings/

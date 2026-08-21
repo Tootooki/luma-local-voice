@@ -39,8 +39,11 @@ test("keeps capture and inference on local services", async () => {
   assert.match(page, /navigator\.mediaDevices\.getUserMedia/);
   assert.match(page, /new MediaRecorder/);
   assert.match(page, /audio_base64/);
+  assert.match(page, /Muse Frontier/);
+  assert.match(page, /form\.append\("mode", mode\)/);
   assert.match(backend, /OLLAMA_URL = "http:\/\/127\.0\.0\.1:11434"/);
   assert.match(backend, /granite4\.1:3b/);
+  assert.match(backend, /muse-spark-1\.2/);
   assert.match(backend, /TemporaryDirectory\(prefix="luma-turn-"\)/);
   assert.match(launcher, /href="http:\/\/localhost:3000\/"/);
   assert.doesNotMatch(launcher, /getUserMedia|api\/conversation/);

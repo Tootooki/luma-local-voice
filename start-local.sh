@@ -2,6 +2,12 @@
 set -e
 cd "${0:A:h}"
 
+if [[ -f .env ]]; then
+  set -a
+  source .env
+  set +a
+fi
+
 if ! command -v ollama >/dev/null 2>&1; then
   echo "Ollama is not installed. Run ./setup-local.sh first."
   exit 1
