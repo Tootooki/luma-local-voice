@@ -8,6 +8,7 @@ function environment({ rateAllowed = true } = {}) {
   const calls = [];
   return {
     calls,
+    DOLCE_CASE_CONTEXT: JSON.stringify({ claimNumber: "TEST-CLAIM", trackingNumber: "TEST-TRACKING" }),
     AI: {
       async run(model, input) {
         calls.push({ model, input });
@@ -49,7 +50,10 @@ test("typed conversation generates an answer and voice", async () => {
   assert.equal(body.reply, "Paris is the capital of France.");
   assert.equal(body.audio, "SUQz");
   assert.equal(env.calls.length, 2);
-  assert.match(env.calls[0].input.messages[0].content, /AI executive assistant calling FedEx/);
+  assert.match(env.calls[0].input.messages[0].content, /Alex, a virtual executive assistant calling FedEx/);
+  assert.match(env.calls[0].input.messages[0].content, /Adil, your boss and the owner of the Dolce Calma brand/);
+  assert.match(env.calls[0].input.messages[0].content, /TEST-CLAIM/);
+  assert.match(env.calls[0].input.messages[0].content, /TEST-TRACKING/);
   assert.match(env.calls[0].input.messages[0].content, /Dispute Resolution Team/);
   assert.match(env.calls[0].input.messages[0].content, /human speaking with you is the FedEx representative/);
 });
