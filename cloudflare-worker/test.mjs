@@ -67,7 +67,7 @@ test("voice conversation transcribes before answering", async () => {
   assert.equal(env.calls.length, 3);
   assert.match(env.calls[0].model, /whisper/);
   assert.equal(env.calls[0].input.beam_size, 1);
-  assert.equal(env.calls[1].input.max_tokens, 100);
+  assert.equal(env.calls[1].input.max_tokens, 48);
 });
 
 test("rate limiting happens before AI usage", async () => {

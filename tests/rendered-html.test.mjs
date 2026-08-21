@@ -49,11 +49,14 @@ test("keeps the Mac app local and connects GitHub Pages to the hosted voice API"
   assert.match(launcher, /navigator\.mediaDevices\?\.getUserMedia/);
   assert.match(launcher, /new MediaRecorder/);
   assert.match(launcher, /Live call · listening/);
-  assert.match(launcher, /if \(continueCall && callActive\) startUtterance\(\)/);
+  assert.match(launcher, /if \(continueCall && callActive\) startUtterance\(\{ echoGuardMs: 300 \}\)/);
   assert.match(launcher, /Press End call when finished/);
   assert.match(launcher, /window\.SpeechRecognition \|\| window\.webkitSpeechRecognition/);
-  assert.match(launcher, /silenceStarted > 450/);
+  assert.match(launcher, /silenceStarted > 320/);
   assert.match(launcher, /submitTurn\(\{ text: fastTranscript, continueCall: true \}\)/);
+  assert.match(launcher, /startBargeInMonitor\(\)/);
+  assert.match(launcher, /Alex stopped\. Go ahead—I’m listening\./);
+  assert.match(launcher, /echoGuardMs = 300/);
   assert.match(launcher, /gain\.gain\.value = 2\.25/);
   assert.match(launcher, /createDynamicsCompressor\(\)/);
   assert.match(launcher, /playback\.volume = 1/);

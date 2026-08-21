@@ -32,7 +32,8 @@
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const history = [];
     let state = "connecting", recorder = null, stream = null, playback = null, playbackUrl = null, outputNodes = [];
-    let callActive = false, audioContext = null, analyser = null, vadFrame = null, discardRecording = false, recognition = null;
+    let callActive = false, audioContext = null, analyser = null, vadFrame = null, bargeFrame = null;
+    let discardRecording = false, recognition = null, recognitionTimer = null;
 
     const labels = {
       connecting: ["Connecting to voice AI", "Please wait"], ready: ["Ready when you are", "Start live call"],
@@ -73,7 +74,9 @@
 
     function releaseMicrophone() {
       if (vadFrame) cancelAnimationFrame(vadFrame);
-      vadFrame = null;
+      if (bargeFrame) cancelAnimationFrame(bargeFrame);
+      if (recognitionTimer) clearTimeout(recognitionTimer);
+      vadFrame = null; bargeFrame = null; recognitionTimer = null;
       if (recorder?.state === "recording") { recorder.onstop = null; recorder.stop(); }
       recorder = null;
       if (recognition) { recognition.onresult = null; recognition.onerror = null; recognition.abort(); }
@@ -84,6 +87,8 @@
     }
 
     function stopPlayback() {
+      if (bargeFrame) cancelAnimationFrame(bargeFrame);
+      bargeFrame = null;
       if (playback) { playback.onended = null; playback.onerror = null; playback.pause(); }
       if (playbackUrl) URL.revokeObjectURL(playbackUrl);
       for (const node of outputNodes) { try { node.disconnect(); } catch {} }
@@ -113,6 +118,30 @@
       }
     }
 
+    function startBargeInMonitor() {
+      if (!callActive || !analyser || !playback) return;
+      const samples = new Uint8Array(analyser.fftSize);
+      const startedAt = performance.now();
+      let loudFrames = 0;
+
+      function monitor(now) {
+        if (!callActive || !playback || playback.paused) return;
+        analyser.getByteTimeDomainData(samples);
+        let energy = 0;
+        for (const sample of samples) { const value = (sample - 128) / 128; energy += value * value; }
+        const userIsSpeaking = now - startedAt > 250 && Math.sqrt(energy / samples.length) > 0.045;
+        loudFrames = userIsSpeaking ? loudFrames + 1 : 0;
+        if (loudFrames >= 5) {
+          stopPlayback();
+          startUtterance({ echoGuardMs: 0, interrupted: true });
+          return;
+        }
+        bargeFrame = requestAnimationFrame(monitor);
+      }
+
+      bargeFrame = requestAnimationFrame(monitor);
+    }
+
     function endCall(message) {
       const wasActive = callActive;
       callActive = false; discardRecording = true;
@@ -130,27 +159,31 @@
         analyser = audioContext.createAnalyser(); analyser.fftSize = 1024;
         audioContext.createMediaStreamSource(stream).connect(analyser);
         callActive = true;
-        startUtterance();
+        startUtterance({ echoGuardMs: 0 });
       } catch (error) {
         endCall();
         setState("error", error?.name === "NotAllowedError" ? "Allow microphone access in the browser, then try again." : "The microphone could not be opened. You can still type below.");
       }
     }
 
-    function startUtterance() {
+    function startUtterance({ echoGuardMs = 300, interrupted = false } = {}) {
       if (!callActive || !stream || !analyser) return;
       const preferred = ["audio/webm;codecs=opus", "audio/mp4"].find(type => MediaRecorder.isTypeSupported(type));
       const current = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
       const currentChunks = [];
       recorder = current; discardRecording = false;
       let speechStarted = false, loudFrames = 0, silenceStarted = 0, fastTranscript = "";
-      const startedAt = performance.now(), samples = new Uint8Array(analyser.fftSize);
+      const startedAt = performance.now(), guardUntil = startedAt + echoGuardMs;
+      const samples = new Uint8Array(analyser.fftSize);
 
-      if (Recognition) {
+      function beginRecognition() {
+        recognitionTimer = null;
+        if (!Recognition || !callActive || current.state !== "recording") return;
         recognition = new Recognition();
         recognition.lang = navigator.language || "en-US";
         recognition.interimResults = true; recognition.continuous = true;
         recognition.onresult = event => {
+          if (performance.now() < guardUntil) return;
           let heard = "";
           for (let index = 0; index < event.results.length; index++) heard += `${event.results[index][0].transcript} `;
           fastTranscript = heard.trim();
@@ -158,17 +191,19 @@
         recognition.onerror = () => { recognition = null; };
         try { recognition.start(); } catch { recognition = null; }
       }
+      recognitionTimer = window.setTimeout(beginRecognition, echoGuardMs);
 
       current.ondataavailable = event => { if (event.data.size) currentChunks.push(event.data); };
       current.onstop = () => {
         if (vadFrame) cancelAnimationFrame(vadFrame);
-        vadFrame = null; recorder = null;
+        if (recognitionTimer) clearTimeout(recognitionTimer);
+        vadFrame = null; recognitionTimer = null; recorder = null;
         if (recognition) { recognition.onresult = null; recognition.onerror = null; recognition.stop(); recognition = null; }
         const shouldSubmit = callActive && !discardRecording && speechStarted;
         const audio = new Blob(currentChunks, { type: current.mimeType || "audio/webm" });
         if (shouldSubmit && fastTranscript) submitTurn({ text: fastTranscript, continueCall: true });
         else if (shouldSubmit && audio.size) submitTurn({ audio, continueCall: true });
-        else if (callActive) startUtterance();
+        else if (callActive) startUtterance({ echoGuardMs: 0 });
       };
 
       function monitor(now) {
@@ -176,7 +211,7 @@
         analyser.getByteTimeDomainData(samples);
         let energy = 0;
         for (const sample of samples) { const value = (sample - 128) / 128; energy += value * value; }
-        const speaking = Math.sqrt(energy / samples.length) > 0.025;
+        const speaking = now >= guardUntil && Math.sqrt(energy / samples.length) > 0.025;
         if (speaking) {
           loudFrames += 1; silenceStarted = 0;
           if (loudFrames >= 3) speechStarted = true;
@@ -184,7 +219,7 @@
           loudFrames = 0;
           if (speechStarted) {
             if (!silenceStarted) silenceStarted = now;
-            if (now - silenceStarted > 450 && now - startedAt > 550) return current.stop();
+            if (now - silenceStarted > 320 && now - startedAt > 430) return current.stop();
           } else if (now - startedAt > 30000) {
             discardRecording = true; return current.stop();
           }
@@ -194,7 +229,7 @@
 
       current.start(250);
       vadFrame = requestAnimationFrame(monitor);
-      setState("listening", `The call stays open. Speak naturally; I’ll answer as soon as you pause.${Recognition ? " Fast live transcription is active." : ""} Press End call when finished.`);
+      setState("listening", interrupted ? "Alex stopped. Go ahead—I’m listening." : `The call stays open. Speak naturally; I’ll answer as soon as you pause.${Recognition ? " Fast live transcription is active." : ""} Press End call when finished.`);
     }
 
     function audioFromBase64(value, type) {
@@ -225,14 +260,15 @@
         await boostPlaybackVolume();
         playback.onended = () => {
           stopPlayback();
-          if (continueCall && callActive) startUtterance(); else setState("ready", "Ready for your next turn.");
+          if (continueCall && callActive) startUtterance({ echoGuardMs: 300 }); else setState("ready", "Ready for your next turn.");
         };
         playback.onerror = () => {
           stopPlayback();
-          if (continueCall && callActive) startUtterance(); else setState("ready", "The answer is shown below; voice playback was unavailable.");
+          if (continueCall && callActive) startUtterance({ echoGuardMs: 150 }); else setState("ready", "The answer is shown below; voice playback was unavailable.");
         };
         setState("speaking", "Alex is speaking.");
         await playback.play();
+        startBargeInMonitor();
       } catch (error) {
         if (callActive) endCall();
         setState("error", error instanceof Error ? error.message : "The voice service could not answer.");

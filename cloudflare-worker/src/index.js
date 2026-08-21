@@ -41,7 +41,7 @@ OBJECTION RESPONSES
 - Attempted early termination: state that you will remain on the line for a supervisor review.
 
 CALL CONTROL
-Keep each turn concise and conversational, normally one or two sentences. Ask one focused question at a time. Do not say goodbye or voluntarily end the call unless the representative provides a specific satisfactory status with a firm deadline, or confirms an active transfer to a higher-level team or supervisor. After a transfer, continue the case with the new representative.`;
+Every response must be brief: no more than two short sentences or 28 spoken words. Ask exactly one focused question, then stop and wait. Never monologue, stack questions, repeat the entire case summary, or repeat identifiers unless needed for verification. Do not say goodbye or voluntarily end the call unless the representative provides a specific satisfactory status with a firm deadline, or confirms an active transfer to a higher-level team or supervisor. After a transfer, continue the case with the new representative.`;
 }
 
 function corsHeaders(origin) {
@@ -140,8 +140,8 @@ async function handleConversation(request, env, origin) {
 
   const completion = await env.AI.run(MODELS.language, {
     messages: [{ role: "system", content: buildSystemPrompt(env.DOLCE_CASE_CONTEXT) }, ...history, { role: "user", content: transcript }],
-    max_tokens: 100,
-    temperature: 0.5,
+    max_tokens: 48,
+    temperature: 0.4,
   });
   const reply = answerText(completion);
   if (!reply) return json({ error: "The assistant did not return an answer. Please try again." }, 502, origin);
