@@ -29,9 +29,10 @@ test("server-renders the Luma voice-assistant shell", async () => {
 });
 
 test("keeps capture and inference on local services", async () => {
-  const [page, backend] = await Promise.all([
+  const [page, backend, launcher] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../backend/main.py", import.meta.url), "utf8"),
+    readFile(new URL("../docs/index.html", import.meta.url), "utf8"),
   ]);
 
   assert.match(page, /const API = "http:\/\/127\.0\.0\.1:8787"/);
@@ -41,4 +42,6 @@ test("keeps capture and inference on local services", async () => {
   assert.match(backend, /OLLAMA_URL = "http:\/\/127\.0\.0\.1:11434"/);
   assert.match(backend, /granite4\.1:3b/);
   assert.match(backend, /TemporaryDirectory\(prefix="luma-turn-"\)/);
+  assert.match(launcher, /href="http:\/\/localhost:3000\/"/);
+  assert.doesNotMatch(launcher, /getUserMedia|api\/conversation/);
 });

@@ -2,7 +2,7 @@
 
 Luma is a private push-to-talk assistant for Apple Silicon Macs. Microphone audio, transcription, language generation, and speech synthesis stay on the machine.
 
-Hosted interface (requires the local service): https://tootooki.github.io/luma-local-voice/
+Hosted launcher: https://tootooki.github.io/luma-local-voice/ — it opens the working local assistant after `./start-local.sh` is running.
 
 ## Stack
 
