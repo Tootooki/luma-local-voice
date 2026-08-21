@@ -1,8 +1,8 @@
 # Luma Local Voice Assistant
 
-Luma has two editions. The Apple Silicon app uses Granite, Whisper, and Kokoro locally on the Mac. The GitHub Pages edition uses a smaller WebLLM model directly in the visitor's browser so it works from another computer without reaching the Mac.
+Luma has two editions. The Apple Silicon app uses Granite, Whisper, and Kokoro locally on the Mac. The hosted edition uses GitHub Pages for the interface and a Cloudflare `workers.dev` API for speech recognition, language generation, and voice playback.
 
-Browser edition: https://tootooki.github.io/luma-local-voice/ — load the model once, then speak or type. The model is cached by the browser for later visits.
+Hosted edition: https://tootooki.github.io/luma-local-voice/ — open it on another computer and speak or type. Visitors do not install or download an AI model.
 
 ## Stack
 
@@ -21,7 +21,9 @@ Open `http://localhost:3000`, allow microphone access, press **Start conversatio
 
 ## GitHub Pages browser edition
 
-The hosted edition needs no Luma backend. It downloads SmolLM2 360M through WebLLM and runs generation with WebGPU on the computer opening the page. Chrome or Edge is recommended. Typed conversations stay in the browser; voice recognition and speech playback use the browser's built-in voice services and may follow that browser vendor's processing rules.
+The hosted edition calls the Luma API at `https://luma-voice-api.luma-voice-svlad92.workers.dev`. Cloudflare Workers AI runs Whisper Large V3 Turbo, Llama 3.1 8B Instruct Fast, and Aura speech synthesis. The API accepts requests only from the GitHub Pages origin and applies a per-client rate limit. Microphone audio and recent conversation text are processed in Cloudflare's service to produce each answer; the page stores no model and requires no model download.
+
+The Worker configuration and source live in `cloudflare-worker/`. It has `workers_dev` enabled and defines no custom route, so deployment does not attach it to a purchased domain.
 
 ## Optional Meta Frontier mode
 
