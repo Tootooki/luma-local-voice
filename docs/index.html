@@ -31,7 +31,7 @@
     const typeForm = $("typeForm"), typeInput = $("typeInput"), send = $("send"), conversation = $("conversation"), latency = $("latency");
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const history = [];
-    let state = "connecting", recorder = null, stream = null, playback = null, playbackUrl = null;
+    let state = "connecting", recorder = null, stream = null, playback = null, playbackUrl = null, outputNodes = [];
     let callActive = false, audioContext = null, analyser = null, vadFrame = null, discardRecording = false, recognition = null;
 
     const labels = {
@@ -86,7 +86,31 @@
     function stopPlayback() {
       if (playback) { playback.onended = null; playback.onerror = null; playback.pause(); }
       if (playbackUrl) URL.revokeObjectURL(playbackUrl);
+      for (const node of outputNodes) { try { node.disconnect(); } catch {} }
+      outputNodes = [];
       playback = null; playbackUrl = null;
+    }
+
+    async function boostPlaybackVolume() {
+      playback.volume = 1;
+      playback.setAttribute("playsinline", "");
+      if (!audioContext || audioContext.state === "closed") return;
+      try {
+        if (audioContext.state === "suspended") await audioContext.resume();
+        const source = audioContext.createMediaElementSource(playback);
+        const gain = audioContext.createGain();
+        const compressor = audioContext.createDynamicsCompressor();
+        gain.gain.value = 2.25;
+        compressor.threshold.value = -18;
+        compressor.knee.value = 12;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.2;
+        source.connect(gain).connect(compressor).connect(audioContext.destination);
+        outputNodes = [source, gain, compressor];
+      } catch {
+        outputNodes = [];
+      }
     }
 
     function endCall(message) {
@@ -198,12 +222,13 @@
         renderTurn(result.transcript, result.reply);
         const blob = audioFromBase64(result.audio, result.audioType);
         playbackUrl = URL.createObjectURL(blob); playback = new Audio(playbackUrl);
+        await boostPlaybackVolume();
         playback.onended = () => {
-          URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null;
+          stopPlayback();
           if (continueCall && callActive) startUtterance(); else setState("ready", "Ready for your next turn.");
         };
         playback.onerror = () => {
-          URL.revokeObjectURL(playbackUrl); playback = null; playbackUrl = null;
+          stopPlayback();
           if (continueCall && callActive) startUtterance(); else setState("ready", "The answer is shown below; voice playback was unavailable.");
         };
         setState("speaking", "Playing Luma’s answer.");
