@@ -35,12 +35,14 @@ test("keeps capture and inference on local services", async () => {
     readFile(new URL("../docs/index.html", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /const API = "http:\/\/127\.0\.0\.1:8787"/);
+  assert.match(page, /const API = "\/api"/);
   assert.match(page, /navigator\.mediaDevices\.getUserMedia/);
   assert.match(page, /new MediaRecorder/);
   assert.match(page, /audio_base64/);
   assert.match(page, /Muse Frontier/);
   assert.match(page, /form\.append\("mode", mode\)/);
+  assert.match(await readFile(new URL("../app/api/health/route.ts", import.meta.url), "utf8"), /BACKEND_URL/);
+  assert.match(await readFile(new URL("../app/api/conversation/route.ts", import.meta.url), "utf8"), /request\.arrayBuffer\(\)/);
   assert.match(backend, /OLLAMA_URL = "http:\/\/127\.0\.0\.1:11434"/);
   assert.match(backend, /granite4\.1:3b/);
   assert.match(backend, /muse-spark-1\.2/);
