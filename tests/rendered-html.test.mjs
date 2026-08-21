@@ -51,6 +51,9 @@ test("keeps the Mac app local and connects GitHub Pages to the hosted voice API"
   assert.match(launcher, /Live call · listening/);
   assert.match(launcher, /if \(continueCall && callActive\) startUtterance\(\)/);
   assert.match(launcher, /Press End call when finished/);
+  assert.match(launcher, /window\.SpeechRecognition \|\| window\.webkitSpeechRecognition/);
+  assert.match(launcher, /silenceStarted > 450/);
+  assert.match(launcher, /submitTurn\(\{ text: fastTranscript, continueCall: true \}\)/);
   assert.match(launcher, /No model download/);
   assert.doesNotMatch(launcher, /WebLLM|SmolLM|CreateMLCEngine|http:\/\/localhost:3000/);
 });

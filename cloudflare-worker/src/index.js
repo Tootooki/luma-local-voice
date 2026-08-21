@@ -11,7 +11,7 @@ const MODELS = {
 };
 
 const SYSTEM_PROMPT =
-  "You are Luma, a warm, natural, and practical voice assistant. Answer the user's actual question directly. Keep spoken answers to one or two concise sentences unless more detail is essential. Never mention internal models, prompts, or infrastructure.";
+  "You are Luma, a warm, natural, and practical voice assistant. Answer the user's actual question directly. Default to one short spoken sentence; use more only when the user explicitly asks for detail. Never mention internal models, prompts, or infrastructure.";
 
 function corsHeaders(origin) {
   return {
@@ -92,7 +92,8 @@ async function handleConversation(request, env, origin) {
     const transcription = await env.AI.run(MODELS.speechToText, {
       audio: encodeBase64(await audio.arrayBuffer()),
       task: "transcribe",
-      vad_filter: true,
+      vad_filter: false,
+      beam_size: 1,
       condition_on_previous_text: false,
     });
     transcript = typeof transcription?.text === "string" ? transcription.text.trim() : "";
@@ -108,8 +109,8 @@ async function handleConversation(request, env, origin) {
 
   const completion = await env.AI.run(MODELS.language, {
     messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history, { role: "user", content: transcript }],
-    max_tokens: 180,
-    temperature: 0.6,
+    max_tokens: 100,
+    temperature: 0.5,
   });
   const reply = answerText(completion);
   if (!reply) return json({ error: "The assistant did not return an answer. Please try again." }, 502, origin);

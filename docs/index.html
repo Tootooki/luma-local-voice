@@ -29,9 +29,10 @@
     const orb = $("orb"), action = $("action"), phase = $("phase"), helper = $("helper"), privacy = $("privacy");
     const privacyLabel = privacy.querySelector("span:last-child");
     const typeForm = $("typeForm"), typeInput = $("typeInput"), send = $("send"), conversation = $("conversation"), latency = $("latency");
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const history = [];
     let state = "connecting", recorder = null, stream = null, playback = null, playbackUrl = null;
-    let callActive = false, audioContext = null, analyser = null, vadFrame = null, discardRecording = false;
+    let callActive = false, audioContext = null, analyser = null, vadFrame = null, discardRecording = false, recognition = null;
 
     const labels = {
       connecting: ["Connecting to voice AI", "Please wait"], ready: ["Ready when you are", "Start live call"],
@@ -75,6 +76,8 @@
       vadFrame = null;
       if (recorder?.state === "recording") { recorder.onstop = null; recorder.stop(); }
       recorder = null;
+      if (recognition) { recognition.onresult = null; recognition.onerror = null; recognition.abort(); }
+      recognition = null;
       if (stream) stream.getTracks().forEach(track => track.stop());
       stream = null;
       audioContext?.close(); audioContext = null; analyser = null;
@@ -116,16 +119,31 @@
       const current = preferred ? new MediaRecorder(stream, { mimeType: preferred }) : new MediaRecorder(stream);
       const currentChunks = [];
       recorder = current; discardRecording = false;
-      let speechStarted = false, loudFrames = 0, silenceStarted = 0;
+      let speechStarted = false, loudFrames = 0, silenceStarted = 0, fastTranscript = "";
       const startedAt = performance.now(), samples = new Uint8Array(analyser.fftSize);
+
+      if (Recognition) {
+        recognition = new Recognition();
+        recognition.lang = navigator.language || "en-US";
+        recognition.interimResults = true; recognition.continuous = true;
+        recognition.onresult = event => {
+          let heard = "";
+          for (let index = 0; index < event.results.length; index++) heard += `${event.results[index][0].transcript} `;
+          fastTranscript = heard.trim();
+        };
+        recognition.onerror = () => { recognition = null; };
+        try { recognition.start(); } catch { recognition = null; }
+      }
 
       current.ondataavailable = event => { if (event.data.size) currentChunks.push(event.data); };
       current.onstop = () => {
         if (vadFrame) cancelAnimationFrame(vadFrame);
         vadFrame = null; recorder = null;
+        if (recognition) { recognition.onresult = null; recognition.onerror = null; recognition.stop(); recognition = null; }
         const shouldSubmit = callActive && !discardRecording && speechStarted;
         const audio = new Blob(currentChunks, { type: current.mimeType || "audio/webm" });
-        if (shouldSubmit && audio.size) submitTurn({ audio, continueCall: true });
+        if (shouldSubmit && fastTranscript) submitTurn({ text: fastTranscript, continueCall: true });
+        else if (shouldSubmit && audio.size) submitTurn({ audio, continueCall: true });
         else if (callActive) startUtterance();
       };
 
@@ -142,7 +160,7 @@
           loudFrames = 0;
           if (speechStarted) {
             if (!silenceStarted) silenceStarted = now;
-            if (now - silenceStarted > 900 && now - startedAt > 700) return current.stop();
+            if (now - silenceStarted > 450 && now - startedAt > 550) return current.stop();
           } else if (now - startedAt > 30000) {
             discardRecording = true; return current.stop();
           }
@@ -152,7 +170,7 @@
 
       current.start(250);
       vadFrame = requestAnimationFrame(monitor);
-      setState("listening", "The call stays open. Speak naturally; I’ll answer when you pause. Press End call when finished.");
+      setState("listening", `The call stays open. Speak naturally; I’ll answer as soon as you pause.${Recognition ? " Fast live transcription is active." : ""} Press End call when finished.`);
     }
 
     function audioFromBase64(value, type) {
