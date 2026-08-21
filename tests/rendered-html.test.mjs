@@ -62,7 +62,7 @@ test("keeps the Mac app local and connects GitHub Pages to the hosted voice API"
   assert.match(launcher, /playback\.volume = 1/);
   assert.match(launcher, /<title>Dolce Voice<\/title>/);
   assert.match(launcher, /<span>Alex<\/span>/);
-  assert.match(launcher, /act as the FedEx representative/);
+  assert.match(launcher, /PRETEND YOU ARE FEDEX REPRESENTATIVE!/);
   assert.match(launcher, /No model download/);
   assert.doesNotMatch(launcher, /WebLLM|SmolLM|CreateMLCEngine|http:\/\/localhost:3000/);
 });
