@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Phase = "connecting" | "ready" | "listening" | "thinking" | "speaking" | "offline" | "error";
 type Mode = "local" | "meta";
-const API = "/api";
+const API = "http://127.0.0.1:8787";
 const copy: Record<Phase, [string, string]> = {
   connecting: ["Connecting to local models", "Please wait"], ready: ["Ready when you are", "Start conversation"],
   listening: ["I’m listening", "Finish speaking"], thinking: ["Thinking locally", "Processing your request"],
@@ -28,7 +28,7 @@ export default function Home() {
 
   const health = useCallback(async () => {
     try {
-      const response = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+      const response = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2500) });
       if (!response.ok) throw new Error();
       const data = await response.json();
       setLocalModels(data.models?.join(" · ") || "Granite 4.1 3B · Whisper Small · Kokoro 82M");

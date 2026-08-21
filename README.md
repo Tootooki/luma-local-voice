@@ -19,18 +19,6 @@ Make sure at least 8–12 GB of disk space is free. Then run `chmod +x setup-loc
 
 Open `http://localhost:3000`, allow microphone access, press **Start conversation**, speak, and press **Finish speaking**.
 
-## Test from another computer
-
-Install `cloudflared`, then run `./start-remote.sh`. It builds the production interface and prints a temporary HTTPS address that works from another computer while this Mac and the command remain running. No Cloudflare credential is required for a temporary address.
-
-For a stable hostname, create a dedicated remotely managed Cloudflare Tunnel, put only its connector token in the ignored `.env` file, and rerun the command:
-
-```zsh
-CLOUDFLARE_TUNNEL_TOKEN='eyJ...'
-```
-
-The browser, health check, and voice requests share one HTTPS origin. The Python backend and Ollama remain bound to loopback and are not exposed as separate services.
-
 ## Optional Meta Frontier mode
 
 Granite Local works without any account or API key. To enable Muse Frontier, create a Meta Model API key at `dev.meta.ai`, copy `.env.example` to `.env`, and set the key with quotes because Meta keys contain pipe characters:
@@ -44,7 +32,7 @@ Restart `./start-local.sh`. The Muse Frontier selector becomes available automat
 
 ## Privacy boundary
 
-The backend and Ollama bind to loopback. Granite Local uses no cloud AI API. Temporary turn audio is deleted after each response. Remote-test mode makes the Luma interface and its narrowly scoped conversation proxy reachable through Cloudflare, so use a private URL and stop the tunnel when testing is complete. Muse Frontier is opt-in and clearly labeled; it sends transcript text to Meta, never the recorded audio. Local and Meta histories are isolated so switching modes cannot upload an earlier private Granite conversation.
+The app binds to loopback. Granite Local uses no cloud AI API. Temporary turn audio is deleted after each response, and Ollama is never exposed publicly. Muse Frontier is opt-in and clearly labeled; it sends transcript text to Meta, never the recorded audio. Local and Meta histories are isolated so switching modes cannot upload an earlier private Granite conversation.
 
 ## Troubleshooting
 
@@ -56,4 +44,4 @@ The backend and Ollama bind to loopback. Granite Local uses no cloud AI API. Tem
 
 ## Later telephony phase
 
-After the browser MVP is accepted, the same conversation pipeline can be connected to Plivo Zentrunk through a self-hosted SIP/agent layer. Calls, recordings, and carrier purchases are intentionally outside this milestone.
+After the browser MVP is accepted, the same conversation pipeline can be connected to Plivo Zentrunk through a self-hosted SIP/agent layer. Telephony, public tunnels, calls, recordings, and carrier purchases are intentionally outside this milestone.
