@@ -49,6 +49,9 @@ test("typed conversation generates an answer and voice", async () => {
   assert.equal(body.reply, "Paris is the capital of France.");
   assert.equal(body.audio, "SUQz");
   assert.equal(env.calls.length, 2);
+  assert.match(env.calls[0].input.messages[0].content, /AI executive assistant calling FedEx/);
+  assert.match(env.calls[0].input.messages[0].content, /Dispute Resolution Team/);
+  assert.match(env.calls[0].input.messages[0].content, /human speaking with you is the FedEx representative/);
 });
 
 test("voice conversation transcribes before answering", async () => {
