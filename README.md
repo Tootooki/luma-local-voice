@@ -2,19 +2,19 @@
 
 Luma is a private push-to-talk assistant for Apple Silicon Macs. Microphone audio, transcription, language generation, and speech synthesis stay on the machine.
 
-Hosted interface: https://tootooki.github.io/luma-local-voice/
+Hosted interface (requires the local service): https://tootooki.github.io/luma-local-voice/
 
 ## Stack
 
-- Qwen3 4B Instruct through Ollama
+- IBM Granite 4.1 3B through Ollama
 - Whisper Small English Q4 through MLX Whisper
-- Kokoro 82M 4-bit through MLX-Audio
+- Kokoro 82M bf16 through MLX-Audio
 - FastAPI backend on `127.0.0.1:8787`
 - Browser interface on `http://localhost:3000`
 
 ## Setup and launch
 
-Make sure at least 8–12 GB of disk space is free. Then run `chmod +x setup-local.sh start-local.sh`, `./setup-local.sh`, and finally `./start-local.sh`.
+Make sure at least 8–12 GB of disk space is free. Then run `chmod +x setup-local.sh start-local.sh`, `./setup-local.sh`, and finally `./start-local.sh`. Setup downloads and verifies all three local models, so the first conversation is not also an installation step.
 
 Open `http://localhost:3000`, allow microphone access, press **Start conversation**, speak, and press **Finish speaking**.
 

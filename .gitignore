@@ -4,6 +4,7 @@ node_modules/
 dist/
 .wrangler/
 backend/.venv/
+__pycache__/
 *.log
 .DS_Store
 recordings/

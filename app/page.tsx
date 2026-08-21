@@ -17,24 +17,29 @@ export default function Home() {
   const [userText, setUserText] = useState("");
   const [assistantText, setAssistantText] = useState("");
   const [latency, setLatency] = useState<number | null>(null);
-  const [models, setModels] = useState("Qwen · Whisper · Kokoro");
+  const [models, setModels] = useState("Granite 4.1 3B · Whisper Small · Kokoro 82M");
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const chunks = useRef<Blob[]>([]);
   const player = useRef<HTMLAudioElement | null>(null);
 
   const health = useCallback(async () => {
-    setPhase("connecting");
     try {
       const response = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2500) });
       if (!response.ok) throw new Error();
       const data = await response.json();
-      setModels(data.models?.join(" · ") || models);
+      setModels(data.models?.join(" · ") || "Granite 4.1 3B · Whisper Small · Kokoro 82M");
       setPhase("ready"); setMessage("Your conversation stays on this Mac.");
     } catch { setPhase("offline"); setMessage("The interface is ready. Start the local model service to begin."); }
-  }, [models]);
+  }, []);
 
-  useEffect(() => { void health(); return () => stream.current?.getTracks().forEach(t => t.stop()); }, [health]);
+  useEffect(() => {
+    const healthCheck = window.setTimeout(() => void health(), 0);
+    return () => {
+      window.clearTimeout(healthCheck);
+      stream.current?.getTracks().forEach(t => t.stop());
+    };
+  }, [health]);
 
   async function submit(audio: Blob) {
     setPhase("thinking"); setMessage("Transcribing and preparing a concise answer…");
@@ -69,7 +74,7 @@ export default function Home() {
   }
 
   async function act() {
-    if (phase === "offline" || phase === "error") return health();
+    if (phase === "offline" || phase === "error") { setPhase("connecting"); return health(); }
     if (phase === "listening") return recorder.current?.stop();
     if (phase === "speaking") { player.current?.pause(); setPhase("ready"); setMessage("Response stopped. Ready for your next turn."); return; }
     if (phase === "ready") await listen();

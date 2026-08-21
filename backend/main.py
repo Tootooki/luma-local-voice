@@ -14,9 +14,9 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 OLLAMA_URL = "http://127.0.0.1:11434"
-LLM_MODEL = os.getenv("LUMA_LLM", "qwen3:4b-instruct")
+LLM_MODEL = os.getenv("LUMA_LLM", "granite4.1:3b")
 STT_MODEL = os.getenv("LUMA_STT", "mlx-community/whisper-small.en-mlx-q4")
-TTS_MODEL = os.getenv("LUMA_TTS", "mlx-community/Kokoro-82M-4bit")
+TTS_MODEL = os.getenv("LUMA_TTS", "mlx-community/Kokoro-82M-bf16")
 TTS_VOICE = os.getenv("LUMA_VOICE", "af_heart")
 MAX_UPLOAD = 12 * 1024 * 1024
 
@@ -31,6 +31,14 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def allow_local_private_network(request, call_next):
+    response = await call_next(request)
+    if request.headers.get("access-control-request-private-network") == "true":
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
 
 history: deque[dict[str, str]] = deque(maxlen=8)
 model_lock = asyncio.Lock()
@@ -51,7 +59,7 @@ async def ollama_ready() -> bool:
 async def health():
     if not await ollama_ready():
         raise HTTPException(503, f"Ollama or {LLM_MODEL} is not ready")
-    return {"status": "ready", "models": [LLM_MODEL, "Whisper Small", "Kokoro 82M"]}
+    return {"status": "ready", "models": ["Granite 4.1 3B", "Whisper Small", "Kokoro 82M"]}
 
 
 def normalize_audio(source: Path, destination: Path) -> None:
