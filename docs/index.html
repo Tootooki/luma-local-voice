@@ -3,24 +3,157 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="A local-first voice assistant with optional Meta frontier reasoning.">
-  <title>Luma — Private Local Voice Assistant</title>
+  <meta name="description" content="Luma is a voice assistant whose language model runs directly in your browser.">
+  <title>Luma — Browser Voice Assistant</title>
   <style>
-    :root{--ink:#14231f;--muted:#687b74;--green:#0f8c68;--cream:#f7f7f2;--line:#dfe7e2}*{box-sizing:border-box}html{min-height:100%;background:var(--cream)}body{min-height:100vh;margin:0;color:var(--ink);background:radial-gradient(circle at 50% 25%,rgba(199,244,229,.52),transparent 32rem),linear-gradient(180deg,#fbfcf8,#f5f7f2);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{width:min(980px,calc(100% - 40px));margin:auto;padding-bottom:32px}.topbar{height:86px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(20,35,31,.08)}.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:720}.brand-mark{width:31px;height:31px;border-radius:9px;background:var(--ink);display:flex;align-items:center;justify-content:center;gap:2px}.brand-mark i{display:block;width:2px;border-radius:3px;background:#d5f7eb}.brand-mark i:nth-child(1){height:8px}.brand-mark i:nth-child(2){height:15px}.brand-mark i:nth-child(3){height:10px}.privacy{display:flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid #cde5dc;border-radius:99px;color:#28735e;background:rgba(246,255,251,.78);font-size:12px;font-weight:640}.dot{width:7px;height:7px;border-radius:50%;background:#9da6a1}.ready .dot{background:#1db180;box-shadow:0 0 0 4px rgba(29,177,128,.11)}.conversation{display:flex;flex-direction:column;align-items:center;text-align:center;padding:66px 0 42px}.eyebrow{margin-bottom:15px;color:var(--green);text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:760}h1{margin:0;font-size:clamp(42px,6.4vw,68px);line-height:.98;letter-spacing:-.062em;font-weight:670}.intro{max-width:510px;margin:19px auto 40px;color:var(--muted);font-size:17px;line-height:1.55}.orb{position:relative;width:174px;height:174px;border:0;border-radius:50%;display:grid;place-items:center;color:white;text-decoration:none;background:linear-gradient(145deg,#168f70,#076a50);box-shadow:0 22px 44px rgba(16,111,84,.24);cursor:pointer;transition:.25s}.orb:hover{transform:translateY(-3px) scale(1.015)}.ring{position:absolute;inset:-12px;border:1px solid rgba(25,158,119,.18);border-radius:50%}.wave{height:46px;display:flex;align-items:center;gap:3px}.wave i{display:block;width:3px;height:22px;border-radius:5px;background:rgba(255,255,255,.78)}.wave i:nth-child(3n){height:38px}.wave i:nth-child(even){height:12px}.phase{margin-top:25px;font-size:14px;font-weight:690}.action{margin-top:14px;min-width:190px;border:0;border-radius:13px;padding:12px 20px;background:var(--ink);color:white;text-decoration:none;font-size:13px;font-weight:650;cursor:pointer}.helper{min-height:20px;margin:12px 0 0;color:var(--muted);font-size:12px}.card{width:min(760px,100%);min-height:184px;margin:auto;padding:20px 23px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,252,.82);box-shadow:0 16px 48px rgba(29,54,45,.055)}.card-head{display:flex;justify-content:space-between;padding-bottom:15px;border-bottom:1px solid #e8ece9;color:#566861;font-size:11px;font-weight:730;text-transform:uppercase;letter-spacing:.11em}.empty{min-height:116px;display:flex;align-items:center;justify-content:center;text-align:center;color:#7d8e87;font-size:13px;line-height:1.6}footer{display:flex;justify-content:center;gap:10px;padding-top:24px;color:#8a9892;font-size:10px}@media(max-width:640px){.shell{width:calc(100% - 26px)}.topbar{height:70px}.conversation{padding:47px 0 32px}.intro{margin:16px auto 31px;font-size:15px}.orb{width:148px;height:148px}}
+    :root{--ink:#14231f;--muted:#687b74;--green:#0f8c68;--cream:#f7f7f2;--line:#dfe7e2;--danger:#9f433d}*{box-sizing:border-box}html{min-height:100%;background:var(--cream)}body{min-height:100vh;margin:0;color:var(--ink);background:radial-gradient(circle at 50% 25%,rgba(199,244,229,.52),transparent 32rem),linear-gradient(180deg,#fbfcf8,#f5f7f2);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.shell{width:min(980px,calc(100% - 40px));margin:auto;padding-bottom:32px}.topbar{height:86px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(20,35,31,.08)}.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:720}.brand-mark{width:31px;height:31px;border-radius:9px;background:var(--ink);display:flex;align-items:center;justify-content:center;gap:2px}.brand-mark i{display:block;width:2px;border-radius:3px;background:#d5f7eb}.brand-mark i:nth-child(1){height:8px}.brand-mark i:nth-child(2){height:15px}.brand-mark i:nth-child(3){height:10px}.privacy{display:flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid #cde5dc;border-radius:99px;color:#28735e;background:rgba(246,255,251,.78);font-size:12px;font-weight:640}.dot{width:7px;height:7px;border-radius:50%;background:#9da6a1}.ready .dot,.listening .dot,.thinking .dot,.speaking .dot{background:#1db180;box-shadow:0 0 0 4px rgba(29,177,128,.11)}.conversation{display:flex;flex-direction:column;align-items:center;text-align:center;padding:54px 0 38px}.eyebrow{margin-bottom:15px;color:var(--green);text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:760}h1{margin:0;font-size:clamp(42px,6.4vw,68px);line-height:.98;letter-spacing:-.062em;font-weight:670}.intro{max-width:560px;margin:19px auto 28px;color:var(--muted);font-size:17px;line-height:1.55}.progress-wrap{width:min(420px,100%);height:5px;margin:0 auto 28px;border-radius:9px;background:#dfe8e3;overflow:hidden;opacity:0;transition:.2s}.progress-wrap.visible{opacity:1}.progress{height:100%;width:0;background:linear-gradient(90deg,#19a77d,#0b7659);transition:width .2s}.orb{position:relative;width:174px;height:174px;border:0;border-radius:50%;display:grid;place-items:center;color:white;background:linear-gradient(145deg,#168f70,#076a50);box-shadow:0 22px 44px rgba(16,111,84,.24);cursor:pointer;transition:.25s}.orb:hover:not(:disabled){transform:translateY(-3px) scale(1.015)}.orb:disabled{cursor:wait;filter:saturate(.65)}.orb.unsupported,.orb.error{background:linear-gradient(145deg,#7c8d87,#53635d)}.orb.listening{animation:breathe 1.8s ease-in-out infinite}.orb.thinking .wave{animation:rotate 2.2s linear infinite}.orb.speaking .wave i{animation:sound 1s ease-in-out infinite alternate}.ring{position:absolute;inset:-12px;border:1px solid rgba(25,158,119,.18);border-radius:50%}.wave{height:46px;display:flex;align-items:center;gap:3px}.wave i{display:block;width:3px;height:22px;border-radius:5px;background:rgba(255,255,255,.78)}.wave i:nth-child(3n){height:38px}.wave i:nth-child(even){height:12px}.phase{margin-top:25px;font-size:14px;font-weight:690}.action{margin-top:14px;min-width:190px;border:0;border-radius:13px;padding:12px 20px;background:var(--ink);color:white;font-size:13px;font-weight:650;cursor:pointer}.action:disabled{opacity:.55;cursor:wait}.helper{min-height:20px;max-width:600px;margin:12px 0 0;color:var(--muted);font-size:12px;line-height:1.45}.helper.danger{color:var(--danger)}.type-form{width:min(560px,100%);display:flex;gap:8px;margin-top:19px}.type-form input{min-width:0;flex:1;border:1px solid #d7e2dd;border-radius:12px;padding:12px 14px;color:var(--ink);background:rgba(255,255,252,.88);font:inherit;font-size:13px;outline:0}.type-form input:focus{border-color:#72bca5;box-shadow:0 0 0 3px rgba(22,143,112,.1)}.type-form button{border:0;border-radius:12px;padding:0 18px;background:#e1eee9;color:#176d55;font-size:12px;font-weight:720;cursor:pointer}.type-form :disabled{opacity:.5;cursor:not-allowed}.card{width:min(760px,100%);min-height:184px;margin:auto;padding:20px 23px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,252,.82);box-shadow:0 16px 48px rgba(29,54,45,.055)}.card-head{display:flex;justify-content:space-between;padding-bottom:15px;border-bottom:1px solid #e8ece9;color:#566861;font-size:11px;font-weight:730;text-transform:uppercase;letter-spacing:.11em}.latency{color:var(--green);text-transform:none;letter-spacing:0}.empty{min-height:116px;display:flex;align-items:center;justify-content:center;text-align:center;color:#7d8e87;font-size:13px;line-height:1.6}.turns{display:grid;gap:18px;padding-top:18px}.turn{display:grid;grid-template-columns:58px 1fr;gap:14px;text-align:left}.turn span{padding-top:2px;color:var(--green);font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.08em}.turn p{margin:0;color:#5d6d67;font-size:15px;line-height:1.55}.turn.assistant p{color:var(--ink)}footer{display:flex;justify-content:center;align-items:center;gap:10px;padding-top:24px;color:#8a9892;font-size:10px;flex-wrap:wrap}@keyframes breathe{50%{box-shadow:0 22px 60px rgba(14,145,106,.4),0 0 0 14px rgba(27,166,125,.08);transform:scale(1.025)}}@keyframes rotate{to{transform:rotate(360deg)}}@keyframes sound{to{transform:scaleY(.35);opacity:.55}}@media(max-width:640px){.shell{width:calc(100% - 26px)}.topbar{height:70px}.conversation{padding:43px 0 32px}.intro{margin:16px auto 23px;font-size:15px}.orb{width:148px;height:148px}.card{border-radius:16px;padding:18px}.type-form{flex-direction:column}.type-form button{padding:12px}.turn{grid-template-columns:48px 1fr}}@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
   </style>
 </head>
 <body>
   <main class="shell">
-    <header class="topbar"><div class="brand"><span class="brand-mark"><i></i><i></i><i></i></span>Luma</div><div class="privacy ready"><span class="dot"></span>Private local launcher</div></header>
+    <header class="topbar"><div class="brand"><span class="brand-mark"><i></i><i></i><i></i></span>Luma</div><div class="privacy" id="privacy"><span class="dot"></span><span>Browser AI</span></div></header>
     <section class="conversation">
-      <div class="eyebrow">Your private voice assistant</div><h1>Just talk. I’m here.</h1>
-      <p class="intro">Granite runs privately on your Mac. Muse Frontier is an optional, clearly labeled cloud mode.</p>
-      <a class="orb" href="http://localhost:3000/" aria-label="Open local assistant"><span class="ring"></span><span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></a>
-      <div class="phase">Open the private app on this Mac</div><a class="action" href="http://localhost:3000/">Open local assistant</a>
-      <p class="helper">Run <strong>./start-local.sh</strong> first. Your microphone and models never pass through GitHub.</p>
+      <div class="eyebrow">Your browser voice assistant</div><h1>Just talk. I’m here.</h1>
+      <p class="intro">Load the lightweight model once, then talk naturally. The language model runs on this computer—no Luma server required.</p>
+      <div class="progress-wrap" id="progressWrap" aria-hidden="true"><div class="progress" id="progress"></div></div>
+      <button class="orb" id="orb" type="button" aria-label="Load browser AI"><span class="ring"></span><span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
+      <div class="phase" id="phase">Load the browser AI</div><button class="action" id="action" type="button">Load AI</button>
+      <p class="helper" id="helper">First use downloads and caches the model. Chrome or Edge with WebGPU is recommended.</p>
+      <form class="type-form" id="typeForm"><input id="typeInput" type="text" autocomplete="off" placeholder="Or type a message…" aria-label="Message" disabled><button id="send" type="submit" disabled>Send</button></form>
     </section>
-    <section class="card"><div class="card-head"><span>How it works</span></div><div class="empty">This public page only launches Luma. Granite mode stays entirely on your computer. If you enable Muse Frontier, audio remains local while transcript text is sent to Meta.</div></section>
-    <footer><span>Granite Local · Optional Muse Frontier</span><span>•</span><span>Local by default</span><span>•</span><span>Audio is not saved</span></footer>
+    <section class="card" aria-live="polite"><div class="card-head"><span>Conversation</span><span class="latency" id="latency"></span></div><div id="conversation"><div class="empty">Your conversation will appear here after the first turn.</div></div></section>
+    <footer><span>SmolLM2 360M · WebLLM</span><span>•</span><span>AI runs in this browser</span><span>•</span><span>Speech uses browser voice services</span></footer>
   </main>
+  <script type="module">
+    const MODEL = "SmolLM2-360M-Instruct-q4f32_1-MLC";
+    const $ = id => document.getElementById(id);
+    const orb = $("orb"), action = $("action"), phase = $("phase"), helper = $("helper");
+    const progressWrap = $("progressWrap"), progress = $("progress"), privacy = $("privacy");
+    const typeForm = $("typeForm"), typeInput = $("typeInput"), send = $("send");
+    const conversation = $("conversation"), latency = $("latency");
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const history = [];
+    let engine = null, recognition = null, state = "unloaded", finalTranscript = "";
+
+    const labels = {
+      unloaded: ["Load the browser AI", "Load AI"], loading: ["Downloading the model", "Please wait"],
+      ready: ["Ready when you are", "Start conversation"], listening: ["I’m listening", "Finish speaking"],
+      thinking: ["Thinking on this computer", "Preparing answer"], speaking: ["Responding", "Tap to stop"],
+      unsupported: ["WebGPU is unavailable", "Use Chrome or Edge"], error: ["Something needs attention", "Try again"]
+    };
+
+    function setState(next, message) {
+      state = next;
+      const [title, button] = labels[next];
+      phase.textContent = title; action.textContent = button;
+      orb.className = `orb ${next}`; orb.setAttribute("aria-label", button);
+      privacy.className = `privacy ${next}`;
+      const busy = next === "loading" || next === "thinking";
+      orb.disabled = busy || next === "unsupported"; action.disabled = busy || next === "unsupported";
+      typeInput.disabled = next !== "ready"; send.disabled = next !== "ready";
+      if (message) helper.textContent = message;
+      helper.classList.toggle("danger", next === "error" || next === "unsupported");
+    }
+
+    function renderTurn(user, reply) {
+      conversation.innerHTML = `<div class="turns"><div class="turn"><span>You</span><p></p></div><div class="turn assistant"><span>Luma</span><p></p></div></div>`;
+      const paragraphs = conversation.querySelectorAll("p");
+      paragraphs[0].textContent = user; paragraphs[1].textContent = reply;
+    }
+
+    async function loadModel() {
+      if (engine) return true;
+      if (!navigator.gpu) {
+        setState("unsupported", "This computer needs a WebGPU-capable Chrome or Edge browser.");
+        return false;
+      }
+      setState("loading", "The first download can take several minutes. It is cached for later visits.");
+      progressWrap.classList.add("visible"); progressWrap.setAttribute("aria-hidden", "false");
+      try {
+        const webllm = await import("https://esm.run/@mlc-ai/web-llm@0.2.84");
+        engine = await webllm.CreateMLCEngine(MODEL, {
+          initProgressCallback(report) {
+            const value = Number.isFinite(report.progress) ? Math.max(0, Math.min(1, report.progress)) : 0;
+            progress.style.width = `${Math.round(value * 100)}%`;
+            helper.textContent = report.text || `Loading ${Math.round(value * 100)}%`;
+          }
+        });
+        progress.style.width = "100%";
+        window.setTimeout(() => progressWrap.classList.remove("visible"), 500);
+        setState("ready", Recognition ? "Tap and speak, or type below." : "Voice recognition is unavailable here; type a message below.");
+        return true;
+      } catch (error) {
+        engine = null;
+        setState("error", error instanceof Error ? error.message : "The browser model could not load.");
+        return false;
+      }
+    }
+
+    async function answer(text) {
+      const clean = text.trim();
+      if (!clean || !engine || state === "thinking") return;
+      window.speechSynthesis?.cancel();
+      setState("thinking", "Generating locally with the browser’s GPU…");
+      const started = performance.now();
+      try {
+        const result = await engine.chat.completions.create({
+          messages: [
+            { role: "system", content: "You are Luma, a warm and practical voice assistant. Answer directly in one or two short sentences unless more detail is essential." },
+            ...history,
+            { role: "user", content: clean }
+          ],
+          temperature: 0.6,
+          max_tokens: 120
+        });
+        const reply = result.choices?.[0]?.message?.content?.trim() || "I couldn’t form an answer.";
+        history.push({ role: "user", content: clean }, { role: "assistant", content: reply });
+        if (history.length > 8) history.splice(0, history.length - 8);
+        latency.textContent = `${((performance.now() - started) / 1000).toFixed(1)}s response`;
+        renderTurn(clean, reply);
+        if ("speechSynthesis" in window) {
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.rate = 1.02; utterance.pitch = 1;
+          utterance.onend = () => setState("ready", Recognition ? "Ready for your next turn." : "Type your next message below.");
+          utterance.onerror = () => setState("ready", "The answer is ready; voice playback was unavailable.");
+          setState("speaking", "Playing the answer through this computer’s browser voice.");
+          window.speechSynthesis.speak(utterance);
+        } else setState("ready", "Voice playback is unavailable; the answer is shown below.");
+      } catch (error) {
+        setState("error", error instanceof Error ? error.message : "The browser model could not answer.");
+      }
+    }
+
+    function startListening() {
+      if (!Recognition) {
+        typeInput.focus(); helper.textContent = "Voice recognition is unavailable here; type your message below."; return;
+      }
+      finalTranscript = "";
+      recognition = new Recognition();
+      recognition.lang = navigator.language || "en-US"; recognition.interimResults = true; recognition.continuous = false;
+      recognition.onresult = event => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalTranscript += text; else interim += text;
+        }
+        helper.textContent = finalTranscript || interim || "Listening…";
+      };
+      recognition.onerror = event => setState("error", event.error === "not-allowed" ? "Allow microphone access, then try again." : `Voice recognition error: ${event.error}`);
+      recognition.onend = () => { if (state === "listening") finalTranscript.trim() ? answer(finalTranscript) : setState("ready", "I didn’t hear anything. Try again or type below."); };
+      recognition.start(); setState("listening", "Speak naturally, then tap once when finished.");
+    }
+
+    async function act() {
+      if (state === "unloaded" || state === "error") return loadModel();
+      if (state === "ready") return startListening();
+      if (state === "listening") return recognition?.stop();
+      if (state === "speaking") { window.speechSynthesis.cancel(); return setState("ready", "Response stopped. Ready for your next turn."); }
+    }
+
+    orb.addEventListener("click", act); action.addEventListener("click", act);
+    typeForm.addEventListener("submit", event => { event.preventDefault(); const text = typeInput.value; typeInput.value = ""; answer(text); });
+    if (!navigator.gpu) setState("unsupported", "Open this page in a current Chrome or Edge browser with WebGPU enabled.");
+    else setState("unloaded", "First use downloads and caches the model. Chrome or Edge is recommended.");
+  </script>
 </body>
 </html>

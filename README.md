@@ -1,8 +1,8 @@
 # Luma Local Voice Assistant
 
-Luma is a push-to-talk assistant for Apple Silicon Macs. Granite Local is the default: microphone audio, transcription, language generation, and speech synthesis all stay on the machine. An optional Muse Frontier mode uses Meta's hosted model for the answer only.
+Luma has two editions. The Apple Silicon app uses Granite, Whisper, and Kokoro locally on the Mac. The GitHub Pages edition uses a smaller WebLLM model directly in the visitor's browser so it works from another computer without reaching the Mac.
 
-Hosted launcher: https://tootooki.github.io/luma-local-voice/ — it opens the working local assistant after `./start-local.sh` is running.
+Browser edition: https://tootooki.github.io/luma-local-voice/ — load the model once, then speak or type. The model is cached by the browser for later visits.
 
 ## Stack
 
@@ -18,6 +18,10 @@ Hosted launcher: https://tootooki.github.io/luma-local-voice/ — it opens the w
 Make sure at least 8–12 GB of disk space is free. Then run `chmod +x setup-local.sh start-local.sh`, `./setup-local.sh`, and finally `./start-local.sh`. Setup downloads and verifies all three local models, so the first conversation is not also an installation step.
 
 Open `http://localhost:3000`, allow microphone access, press **Start conversation**, speak, and press **Finish speaking**.
+
+## GitHub Pages browser edition
+
+The hosted edition needs no Luma backend. It downloads SmolLM2 360M through WebLLM and runs generation with WebGPU on the computer opening the page. Chrome or Edge is recommended. Typed conversations stay in the browser; voice recognition and speech playback use the browser's built-in voice services and may follow that browser vendor's processing rules.
 
 ## Optional Meta Frontier mode
 
